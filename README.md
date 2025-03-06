@@ -120,9 +120,3 @@ The system effectively detects multiple types of attacks in real-time and provid
 - **J Rachana**  
 - **Katragadda Sumanth Chowdary**  
 
----
-
-## 📧 Contact
-For queries or contributions, please contact:  
-- **Email**: [hakaishin@gmail.com](mailto:hakaishin@gmail.com)  
-- **GitHub**: [chaithanya3116](https://github.com/Chaithanya3116)
