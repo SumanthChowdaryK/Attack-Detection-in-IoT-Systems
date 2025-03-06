@@ -45,25 +45,6 @@ The rapid growth of IoT devices has introduced significant security challenges, 
   - Wireshark, tcpdump
 - **Dataset**: IoT-24 Dataset
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://Chaithanya3116/IoT_Attack_and_Security_Analysis_in_Edge_Computing_Network.git
-   cd iot-security-edge
-
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-
-3. Set up the Raspberry Pi environment:
-- Connect sensors and devices as per the provided schematic.
-- Install necessary libraries for GPIO control.
-
-4. Deploy the web interface:
-   ```bash
-   python app.py
-
-5. Access the dashboard via http://<raspberry-pi-ip>:5000.
 
 ## 🧪 Features and Functionality
 1. **Edge Computing Node**  
