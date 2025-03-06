@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .btn {
+            padding: 15px 30px;
+            font-size: 1.5em;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn-on {
+            background-color: #28a745;
+        }
+        .btn-off {
+            background-color: #dc3545;
+        }
+        .btn:hover {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LED Control Dashboard</h1>
+        {% if led_state == 1 %}
+            <button class="btn btn-off" onclick="window.location.href='/led/off'">Turn Off LED</button>
+        {% else %}
+            <button class="btn btn-on" onclick="window.location.href='/led/on'">Turn On LED</button>
+        {% endif %}
+    </div>
+</body>
+</html>

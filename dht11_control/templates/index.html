@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature & Humidity Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #e0f7fa;
+        }
+        .container {
+            max-width: 700px;
+            margin: 50px auto;
+            text-align: center;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #00796b;
+        }
+        .data {
+            font-size: 1.5em;
+            margin: 20px 0;
+        }
+        .button {
+            padding: 12px 25px;
+            font-size: 1.2em;
+            color: #fff;
+            background-color: #00796b;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 10px;
+        }
+        .button:hover {
+            background-color: #004d40;
+        }
+        .unit-toggle, .buzzer-toggle {
+            margin-top: 20px;
+            font-size: 1.1em;
+            padding: 8px 15px;
+            background-color: #00796b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .unit-toggle:hover, .buzzer-toggle:hover {
+            background-color: #004d40;
+        }
+        .threshold-input {
+            margin-top: 10px;
+            font-size: 1.1em;
+            padding: 8px 15px;
+        }
+        #chart {
+            margin-top: 30px;
+        }
+        .alert {
+            font-size: 1.1em;
+            color: #f44336;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Temperature & Humidity Dashboard</h1>
+        <div class="data">
+            <p>Temperature: <span id="temperature">Loading...</span></p>
+            <p>Humidity: <span id="humidity">Loading...</span></p>
+        </div>
+        <button class="button" onclick="location.reload()">Refresh</button>
+
+        <div>
+            <button class="unit-toggle" onclick="toggleUnit()">Toggle &deg;C/&deg;F</button>
+            <button class="buzzer-toggle" onclick="turnOffBuzzer()">Turn Off Buzzer</button>
+        </div>
+
+        <!-- Set threshold input and button -->
+        <div>
+            <input class="threshold-input" type="number" id="threshold" placeholder="Enter Threshold in &deg;C" />
+            <button class="button" onclick="setThreshold()">Set Threshold</button>
+        </div>
+        <canvas id="chart" width="400" height="200"></canvas>
+        
+        <!-- The alert message to warn the user if the temperature crosses the threshold -->
+        <div class="alert" id="alert"></div>
+   
+        <div>
+            <button onclick="window.location.href='/download_csv'">Download Predicted Traffic Data in CSV</button>
+        </div>
+        
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let temperatureUnit = 'celsius';  // Default unit
+        let temperatureHistory = [];
+        let humidityHistory = [];
+        let labels = [];
+        let buzzerState = false;  // To track buzzer state
+        let thresholdCrossed = false;
+        
+        // Function to toggle between Celsius and Fahrenheit
+        function toggleUnit() {
+            temperatureUnit = temperatureUnit === 'celsius' ? 'fahrenheit' : 'celsius';
+            fetchData();  // Fetch data and update the display
+        }
+
+        // Function to turn off the buzzer
+        function turnOffBuzzer() {
+            fetch('/api/turn_off_buzzer', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        buzzerState = false;  // Keep the buzzer off
+                        alert("Buzzer turned off successfully!");
+                    }
+                });
+        }
+
+        function setThreshold() {
+            const newThreshold = document.getElementById('threshold').value;
+            console.log("New Threshold:", newThreshold);  // Debugging log
+            fetch('/api/set_threshold', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ threshold: newThreshold })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Threshold updated to: ' + newThreshold);
+                    alert('Threshold updated successfully!');
+                } else {
+                    console.error('Failed to update threshold');
+                }
+            });
+        }
+
+        async function fetchData() {
+            const response = await fetch(`/api/data`);
+            const data = await response.json();
+
+            // Convert temperature if unit is Fahrenheit
+            let displayedTemperature = data.temperature;
+            if (temperatureUnit === 'fahrenheit' && data.temperature !== null) {
+                displayedTemperature = (data.temperature * 9/5) + 32;
+            }
+
+            // Update the temperature and humidity on the page
+            document.getElementById('temperature').textContent = `${displayedTemperature.toFixed(2)} ${temperatureUnit === 'fahrenheit' ? '\u00B0F' : '\u00B0C'}`;
+            document.getElementById('humidity').textContent = `${data.humidity}%`;
+
+            // Update the live chart
+            updateChart(data.temperature, data.humidity);
+
+            // Check if temperature crossed threshold and show warning
+            const threshold = parseFloat(document.getElementById('threshold').value);
+            if (displayedTemperature > threshold) {
+                if (!thresholdCrossed) {
+                    thresholdCrossed = true;
+                    document.getElementById('alert').textContent = `Warning: Temperature has exceeded the threshold of ${threshold}\u00B0C!`;
+                }
+            } else {
+                thresholdCrossed = false;
+                document.getElementById('alert').textContent = ''; // Clear the warning when temperature is under threshold
+            }
+        }
+
+        // Initialize the chart
+        let chart;
+
+        function updateChart(temp, hum) {
+            const now = new Date();
+            const timeLabel = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+            labels.push(timeLabel);
+            temperatureHistory.push(temp);
+            humidityHistory.push(hum);
+
+            if (labels.length > 10) {
+                labels.shift();
+                temperatureHistory.shift();
+                humidityHistory.shift();
+            }
+
+            chart.update();
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchData();
+            setInterval(fetchData, 5000);
+
+            const ctx = document.getElementById('chart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Temperature',
+                            data: temperatureHistory,
+                            borderColor: 'rgb(255, 99, 132)',
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Humidity',
+                            data: humidityHistory,
+                            borderColor: 'rgb(54, 162, 235)',
+                            tension: 0.1
+                        }
+                    ]
+                }
+            });
+        });
+        
+    </script>
+</body>
+</html>
